@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { dbStorage } from '@/lib/db';
 
 interface User {
   username: string;
@@ -44,28 +45,41 @@ export default function Index() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(savedUser);
-      setIsAuthenticated(true);
-      loadUserData(savedUser);
-    }
+    const initApp = async () => {
+      await dbStorage.init();
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        setCurrentUser(savedUser);
+        setIsAuthenticated(true);
+        await loadUserData(savedUser);
+      }
+    };
+    initApp();
   }, []);
 
-  const loadUserData = (username: string) => {
-    const userGames = localStorage.getItem(`${username}_games`);
-    const userFiles = localStorage.getItem(`${username}_files`);
-    
-    if (userGames) setGames(JSON.parse(userGames));
-    if (userFiles) setFiles(JSON.parse(userFiles));
+  const loadUserData = async (username: string) => {
+    try {
+      const userData = await dbStorage.loadUserData(username);
+      if (userData) {
+        setGames(userData.games || []);
+        setFiles(userData.files || []);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить данные', variant: 'destructive' });
+    }
   };
 
-  const saveUserData = (username: string, gamesData: GameApp[], filesData: FileItem[]) => {
-    localStorage.setItem(`${username}_games`, JSON.stringify(gamesData));
-    localStorage.setItem(`${username}_files`, JSON.stringify(filesData));
+  const saveUserData = async (username: string, gamesData: GameApp[], filesData: FileItem[]) => {
+    try {
+      await dbStorage.saveUserData(username, gamesData, filesData);
+    } catch (error) {
+      console.error('Error saving user data:', error);
+      toast({ title: 'Ошибка', description: 'Не удалось сохранить данные', variant: 'destructive' });
+    }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!loginUsername || !loginPassword) {
       toast({ title: 'Ошибка', description: 'Введите логин и пароль', variant: 'destructive' });
       return;
@@ -79,7 +93,7 @@ export default function Index() {
         setCurrentUser(loginUsername);
         setIsAuthenticated(true);
         localStorage.setItem('currentUser', loginUsername);
-        loadUserData(loginUsername);
+        await loadUserData(loginUsername);
         toast({ title: 'Добро пожаловать!', description: `Вход выполнен: ${loginUsername}` });
       } else {
         toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
@@ -97,9 +111,9 @@ export default function Index() {
     setLoginPassword('');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (currentUser) {
-      saveUserData(currentUser, games, files);
+      await saveUserData(currentUser, games, files);
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
@@ -112,55 +126,61 @@ export default function Index() {
   const addGame = (name: string, url: string, type: 'link' | 'local', file?: File) => {
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const fileData = e.target?.result as string;
         const newGame: GameApp = { id: Date.now().toString(), name, url: fileData, type, isFile: true };
         const updatedGames = [...games, newGame];
         setGames(updatedGames);
-        if (currentUser) saveUserData(currentUser, updatedGames, files);
+        if (currentUser) await saveUserData(currentUser, updatedGames, files);
         toast({ title: 'Успех', description: `Приложение "${name}" загружено` });
       };
       reader.readAsDataURL(file);
     } else {
-      const newGame: GameApp = { id: Date.now().toString(), name, url, type, isFile: false };
-      const updatedGames = [...games, newGame];
-      setGames(updatedGames);
-      if (currentUser) saveUserData(currentUser, updatedGames, files);
-      toast({ title: 'Успех', description: `Игра "${name}" добавлена` });
+      const addGameAsync = async () => {
+        const newGame: GameApp = { id: Date.now().toString(), name, url, type, isFile: false };
+        const updatedGames = [...games, newGame];
+        setGames(updatedGames);
+        if (currentUser) await saveUserData(currentUser, updatedGames, files);
+        toast({ title: 'Успех', description: `Игра "${name}" добавлена` });
+      };
+      addGameAsync();
     }
   };
 
   const addFile = (name: string, url: string, type: 'document' | 'image' | 'video', canViewInSite: boolean, file?: File) => {
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const fileData = e.target?.result as string;
         const newFile: FileItem = { id: Date.now().toString(), name, url: fileData, type, canViewInSite };
         const updatedFiles = [...files, newFile];
         setFiles(updatedFiles);
-        if (currentUser) saveUserData(currentUser, games, updatedFiles);
+        if (currentUser) await saveUserData(currentUser, games, updatedFiles);
         toast({ title: 'Успех', description: `Файл "${name}" загружен` });
       };
       reader.readAsDataURL(file);
     } else {
-      const newFile: FileItem = { id: Date.now().toString(), name, url, type, canViewInSite };
-      const updatedFiles = [...files, newFile];
-      setFiles(updatedFiles);
-      if (currentUser) saveUserData(currentUser, games, updatedFiles);
-      toast({ title: 'Успех', description: `Файл "${name}" добавлен` });
+      const addFileAsync = async () => {
+        const newFile: FileItem = { id: Date.now().toString(), name, url, type, canViewInSite };
+        const updatedFiles = [...files, newFile];
+        setFiles(updatedFiles);
+        if (currentUser) await saveUserData(currentUser, games, updatedFiles);
+        toast({ title: 'Успех', description: `Файл "${name}" добавлен` });
+      };
+      addFileAsync();
     }
   };
 
-  const deleteGame = (id: string) => {
+  const deleteGame = async (id: string) => {
     const updatedGames = games.filter(g => g.id !== id);
     setGames(updatedGames);
-    if (currentUser) saveUserData(currentUser, updatedGames, files);
+    if (currentUser) await saveUserData(currentUser, updatedGames, files);
   };
 
-  const deleteFile = (id: string) => {
+  const deleteFile = async (id: string) => {
     const updatedFiles = files.filter(f => f.id !== id);
     setFiles(updatedFiles);
-    if (currentUser) saveUserData(currentUser, games, updatedFiles);
+    if (currentUser) await saveUserData(currentUser, games, updatedFiles);
   };
 
   const filteredFiles = fileFilter === 'all' ? files : files.filter(f => f.type === fileFilter);
