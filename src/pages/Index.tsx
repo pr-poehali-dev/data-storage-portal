@@ -108,20 +108,46 @@ export default function Index() {
     toast({ title: 'Выход', description: 'Вы вышли из системы' });
   };
 
-  const addGame = (name: string, url: string, type: 'link' | 'local') => {
-    const newGame: GameApp = { id: Date.now().toString(), name, url, type };
-    const updatedGames = [...games, newGame];
-    setGames(updatedGames);
-    if (currentUser) saveUserData(currentUser, updatedGames, files);
-    toast({ title: 'Успех', description: `Игра "${name}" добавлена` });
+  const addGame = (name: string, url: string, type: 'link' | 'local', file?: File) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileData = e.target?.result as string;
+        const newGame: GameApp = { id: Date.now().toString(), name, url: fileData, type };
+        const updatedGames = [...games, newGame];
+        setGames(updatedGames);
+        if (currentUser) saveUserData(currentUser, updatedGames, files);
+        toast({ title: 'Успех', description: `Приложение "${name}" загружено` });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const newGame: GameApp = { id: Date.now().toString(), name, url, type };
+      const updatedGames = [...games, newGame];
+      setGames(updatedGames);
+      if (currentUser) saveUserData(currentUser, updatedGames, files);
+      toast({ title: 'Успех', description: `Игра "${name}" добавлена` });
+    }
   };
 
-  const addFile = (name: string, url: string, type: 'document' | 'image' | 'video', canViewInSite: boolean) => {
-    const newFile: FileItem = { id: Date.now().toString(), name, url, type, canViewInSite };
-    const updatedFiles = [...files, newFile];
-    setFiles(updatedFiles);
-    if (currentUser) saveUserData(currentUser, games, updatedFiles);
-    toast({ title: 'Успех', description: `Файл "${name}" добавлен` });
+  const addFile = (name: string, url: string, type: 'document' | 'image' | 'video', canViewInSite: boolean, file?: File) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileData = e.target?.result as string;
+        const newFile: FileItem = { id: Date.now().toString(), name, url: fileData, type, canViewInSite };
+        const updatedFiles = [...files, newFile];
+        setFiles(updatedFiles);
+        if (currentUser) saveUserData(currentUser, games, updatedFiles);
+        toast({ title: 'Успех', description: `Файл "${name}" загружен` });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const newFile: FileItem = { id: Date.now().toString(), name, url, type, canViewInSite };
+      const updatedFiles = [...files, newFile];
+      setFiles(updatedFiles);
+      if (currentUser) saveUserData(currentUser, games, updatedFiles);
+      toast({ title: 'Успех', description: `Файл "${name}" добавлен` });
+    }
   };
 
   const deleteGame = (id: string) => {
@@ -395,18 +421,37 @@ export default function Index() {
   );
 }
 
-function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url: string, type: 'link' | 'local') => void; isOpen: boolean; setIsOpen: (open: boolean) => void }) {
+function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url: string, type: 'link' | 'local', file?: File) => void; isOpen: boolean; setIsOpen: (open: boolean) => void }) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [type, setType] = useState<'link' | 'local'>('link');
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = () => {
-    if (name && url) {
+    if (uploadMode === 'file' && name && selectedFile) {
+      onAdd(name, '', type, selectedFile);
+      setName('');
+      setUrl('');
+      setSelectedFile(null);
+      setType('link');
+      setUploadMode('url');
+      setIsOpen(false);
+    } else if (uploadMode === 'url' && name && url) {
       onAdd(name, url, type);
       setName('');
       setUrl('');
       setType('link');
+      setUploadMode('url');
       setIsOpen(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (!name) setName(file.name);
     }
   };
 
@@ -424,6 +469,26 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
           <DialogDescription>Укажите название и ссылку на игру или приложение</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={uploadMode === 'url' ? 'default' : 'outline'}
+              onClick={() => setUploadMode('url')}
+              className={uploadMode === 'url' ? 'bg-primary' : 'border-primary/30'}
+              size="sm"
+            >
+              <Icon name="Link" size={14} className="mr-2" />
+              Ссылка/Путь
+            </Button>
+            <Button
+              variant={uploadMode === 'file' ? 'default' : 'outline'}
+              onClick={() => setUploadMode('file')}
+              className={uploadMode === 'file' ? 'bg-primary' : 'border-primary/30'}
+              size="sm"
+            >
+              <Icon name="Upload" size={14} className="mr-2" />
+              Загрузить файл
+            </Button>
+          </div>
           <div>
             <Label htmlFor="game-name">Название</Label>
             <Input
@@ -434,34 +499,53 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               className="bg-secondary border-primary/30"
             />
           </div>
-          <div>
-            <Label htmlFor="game-url">Ссылка или путь</Label>
-            <Input
-              id="game-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://... или C:\Program Files\..."
-              className="bg-secondary border-primary/30"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={type === 'link' ? 'default' : 'outline'}
-              onClick={() => setType('link')}
-              className={type === 'link' ? 'bg-primary' : 'border-primary/30'}
-            >
-              <Icon name="Link" size={16} className="mr-2" />
-              Ссылка
-            </Button>
-            <Button
-              variant={type === 'local' ? 'default' : 'outline'}
-              onClick={() => setType('local')}
-              className={type === 'local' ? 'bg-primary' : 'border-primary/30'}
-            >
-              <Icon name="HardDrive" size={16} className="mr-2" />
-              Локальный путь
-            </Button>
-          </div>
+          {uploadMode === 'url' ? (
+            <div>
+              <Label htmlFor="game-url">Ссылка или путь</Label>
+              <Input
+                id="game-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://... или C:\Program Files\..."
+                className="bg-secondary border-primary/30"
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="game-file">Выберите файл</Label>
+              <Input
+                id="game-file"
+                type="file"
+                onChange={handleFileSelect}
+                className="bg-secondary border-primary/30 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+              />
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Выбран: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+          )}
+          {uploadMode === 'url' && (
+            <div className="flex gap-2">
+              <Button
+                variant={type === 'link' ? 'default' : 'outline'}
+                onClick={() => setType('link')}
+                className={type === 'link' ? 'bg-primary' : 'border-primary/30'}
+              >
+                <Icon name="Link" size={16} className="mr-2" />
+                Ссылка
+              </Button>
+              <Button
+                variant={type === 'local' ? 'default' : 'outline'}
+                onClick={() => setType('local')}
+                className={type === 'local' ? 'bg-primary' : 'border-primary/30'}
+              >
+                <Icon name="HardDrive" size={16} className="mr-2" />
+                Локальный путь
+              </Button>
+            </div>
+          )}
           <Button onClick={handleSubmit} className="w-full neon-border bg-primary hover:bg-primary/80">
             Добавить
           </Button>
@@ -471,20 +555,51 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
   );
 }
 
-function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url: string, type: 'document' | 'image' | 'video', canViewInSite: boolean) => void; isOpen: boolean; setIsOpen: (open: boolean) => void }) {
+function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url: string, type: 'document' | 'image' | 'video', canViewInSite: boolean, file?: File) => void; isOpen: boolean; setIsOpen: (open: boolean) => void }) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [type, setType] = useState<'document' | 'image' | 'video'>('document');
   const [canViewInSite, setCanViewInSite] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = () => {
-    if (name && url) {
+    if (uploadMode === 'file' && name && selectedFile) {
+      onAdd(name, '', type, canViewInSite, selectedFile);
+      setName('');
+      setUrl('');
+      setSelectedFile(null);
+      setType('document');
+      setCanViewInSite(false);
+      setUploadMode('url');
+      setIsOpen(false);
+    } else if (uploadMode === 'url' && name && url) {
       onAdd(name, url, type, canViewInSite);
       setName('');
       setUrl('');
       setType('document');
       setCanViewInSite(false);
+      setUploadMode('url');
       setIsOpen(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (!name) setName(file.name);
+      
+      if (file.type.startsWith('image/')) {
+        setType('image');
+        setCanViewInSite(true);
+      } else if (file.type.startsWith('video/')) {
+        setType('video');
+        setCanViewInSite(true);
+      } else {
+        setType('document');
+        setCanViewInSite(false);
+      }
     }
   };
 
@@ -502,6 +617,26 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
           <DialogDescription>Укажите информацию о файле</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={uploadMode === 'url' ? 'default' : 'outline'}
+              onClick={() => setUploadMode('url')}
+              className={uploadMode === 'url' ? 'bg-primary' : 'border-primary/30'}
+              size="sm"
+            >
+              <Icon name="Link" size={14} className="mr-2" />
+              Ссылка/Путь
+            </Button>
+            <Button
+              variant={uploadMode === 'file' ? 'default' : 'outline'}
+              onClick={() => setUploadMode('file')}
+              className={uploadMode === 'file' ? 'bg-primary' : 'border-primary/30'}
+              size="sm"
+            >
+              <Icon name="Upload" size={14} className="mr-2" />
+              Загрузить файл
+            </Button>
+          </div>
           <div>
             <Label htmlFor="file-name">Название</Label>
             <Input
@@ -512,45 +647,65 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               className="bg-secondary border-primary/30"
             />
           </div>
-          <div>
-            <Label htmlFor="file-url">Ссылка или путь</Label>
-            <Input
-              id="file-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://... или C:\Documents\..."
-              className="bg-secondary border-primary/30"
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={type === 'document' ? 'default' : 'outline'}
-              onClick={() => setType('document')}
-              size="sm"
-              className={type === 'document' ? 'bg-primary' : 'border-primary/30'}
-            >
-              <Icon name="FileText" size={14} className="mr-1" />
-              Документ
-            </Button>
-            <Button
-              variant={type === 'image' ? 'default' : 'outline'}
-              onClick={() => setType('image')}
-              size="sm"
-              className={type === 'image' ? 'bg-primary' : 'border-primary/30'}
-            >
-              <Icon name="Image" size={14} className="mr-1" />
-              Изображение
-            </Button>
-            <Button
-              variant={type === 'video' ? 'default' : 'outline'}
-              onClick={() => setType('video')}
-              size="sm"
-              className={type === 'video' ? 'bg-primary' : 'border-primary/30'}
-            >
-              <Icon name="Video" size={14} className="mr-1" />
-              Видео
-            </Button>
-          </div>
+          {uploadMode === 'url' ? (
+            <div>
+              <Label htmlFor="file-url">Ссылка или путь</Label>
+              <Input
+                id="file-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://... или C:\Documents\..."
+                className="bg-secondary border-primary/30"
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="file-file">Выберите файл</Label>
+              <Input
+                id="file-file"
+                type="file"
+                onChange={handleFileSelect}
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                className="bg-secondary border-primary/30 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+              />
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Выбран: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
+            </div>
+          )}
+          {uploadMode === 'url' && (
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={type === 'document' ? 'default' : 'outline'}
+                onClick={() => setType('document')}
+                size="sm"
+                className={type === 'document' ? 'bg-primary' : 'border-primary/30'}
+              >
+                <Icon name="FileText" size={14} className="mr-1" />
+                Документ
+              </Button>
+              <Button
+                variant={type === 'image' ? 'default' : 'outline'}
+                onClick={() => setType('image')}
+                size="sm"
+                className={type === 'image' ? 'bg-primary' : 'border-primary/30'}
+              >
+                <Icon name="Image" size={14} className="mr-1" />
+                Изображение
+              </Button>
+              <Button
+                variant={type === 'video' ? 'default' : 'outline'}
+                onClick={() => setType('video')}
+                size="sm"
+                className={type === 'video' ? 'bg-primary' : 'border-primary/30'}
+              >
+                <Icon name="Video" size={14} className="mr-1" />
+                Видео
+              </Button>
+            </div>
+          )}
           {(type === 'image' || type === 'video') && (
             <div className="flex items-center gap-2">
               <input
