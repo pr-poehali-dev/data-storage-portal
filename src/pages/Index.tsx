@@ -275,16 +275,7 @@ export default function Index() {
                   </CardHeader>
                   <CardContent>
                     <Button
-                      onClick={() => {
-                        if (game.isFile) {
-                          const link = document.createElement('a');
-                          link.href = game.url;
-                          link.download = game.name;
-                          link.click();
-                        } else {
-                          window.open(game.url, '_blank');
-                        }
-                      }}
+                      onClick={() => window.open(game.url, '_blank')}
                       className="w-full bg-primary hover:bg-primary/90 shadow-md"
                     >
                       <Icon name={game.type === 'link' ? 'ExternalLink' : 'Play'} size={16} className="mr-2" />
