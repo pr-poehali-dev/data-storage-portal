@@ -19,6 +19,7 @@ interface GameApp {
   name: string;
   url: string;
   type: 'link' | 'local';
+  isFile?: boolean;
 }
 
 interface FileItem {
@@ -113,7 +114,7 @@ export default function Index() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const fileData = e.target?.result as string;
-        const newGame: GameApp = { id: Date.now().toString(), name, url: fileData, type };
+        const newGame: GameApp = { id: Date.now().toString(), name, url: fileData, type, isFile: true };
         const updatedGames = [...games, newGame];
         setGames(updatedGames);
         if (currentUser) saveUserData(currentUser, updatedGames, files);
@@ -121,7 +122,7 @@ export default function Index() {
       };
       reader.readAsDataURL(file);
     } else {
-      const newGame: GameApp = { id: Date.now().toString(), name, url, type };
+      const newGame: GameApp = { id: Date.now().toString(), name, url, type, isFile: false };
       const updatedGames = [...games, newGame];
       setGames(updatedGames);
       if (currentUser) saveUserData(currentUser, updatedGames, files);
@@ -166,10 +167,10 @@ export default function Index() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center cyber-grid p-4">
-        <Card className="w-full max-w-md border-primary/30 neon-border bg-card/95 backdrop-blur">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-secondary">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-4xl font-orbitron neon-glow text-primary mb-2">ALL IN ONE</CardTitle>
+            <CardTitle className="text-4xl font-bold text-foreground mb-2">ALL IN ONE</CardTitle>
             <CardDescription className="text-muted-foreground">Персональное хранилище данных</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -180,7 +181,7 @@ export default function Index() {
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
                 placeholder="Введите логин"
-                className="bg-secondary border-primary/30 text-foreground"
+                className="bg-input border-border/50 text-foreground focus:border-foreground/30"
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
@@ -192,15 +193,15 @@ export default function Index() {
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 placeholder="Введите пароль"
-                className="bg-secondary border-primary/30 text-foreground"
+                className="bg-input border-border/50 text-foreground focus:border-foreground/30"
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
-            <Button onClick={handleLogin} className="w-full neon-border bg-primary text-primary-foreground hover:bg-primary/80">
+            <Button onClick={handleLogin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg">
               <Icon name="LogIn" size={18} className="mr-2" />
               Войти / Регистрация
             </Button>
-            <Alert className="border-accent/50 bg-accent/20">
+            <Alert className="border-border/30 bg-accent/30">
               <Icon name="Info" size={18} />
               <AlertDescription className="text-xs text-muted-foreground ml-2">
                 Если пользователь не существует, он будет создан автоматически
@@ -213,13 +214,13 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen cyber-grid">
-      <header className="border-b border-primary/30 bg-card/80 backdrop-blur sticky top-0 z-50">
+    <div className="min-h-screen">
+      <header className="border-b border-border/30 bg-card/80 backdrop-blur sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-orbitron font-bold neon-glow text-primary">ALL IN ONE</h1>
+          <h1 className="text-3xl font-bold text-foreground">ALL IN ONE</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Пользователь: <span className="text-primary font-mono">{currentUser}</span></span>
-            <Button onClick={handleLogout} variant="outline" size="sm" className="border-primary/30 neon-border">
+            <span className="text-sm text-muted-foreground">Пользователь: <span className="text-foreground font-mono font-semibold">{currentUser}</span></span>
+            <Button onClick={handleLogout} variant="outline" size="sm" className="border-border/50 hover:bg-accent">
               <Icon name="LogOut" size={16} className="mr-2" />
               Выход
             </Button>
@@ -228,20 +229,20 @@ export default function Index() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Alert className="mb-6 border-primary/50 bg-accent/30 neon-border animate-glow-pulse">
+        <Alert className="mb-6 border-border/50 bg-accent/40 shadow-md animate-fade-in">
           <Icon name="Sparkles" size={20} />
-          <AlertDescription className="ml-2 text-accent-foreground font-semibold">
+          <AlertDescription className="ml-2 text-foreground font-medium">
             🚀 Скоро: Синхронизация данных между устройствами!
           </AlertDescription>
         </Alert>
 
         <Tabs defaultValue="games" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-secondary/50 border border-primary/30">
-            <TabsTrigger value="games" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border/30">
+            <TabsTrigger value="games" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Icon name="Gamepad2" size={18} className="mr-2" />
               Игры / Приложения
             </TabsTrigger>
-            <TabsTrigger value="files" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="files" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Icon name="Files" size={18} className="mr-2" />
               Файлы
             </TabsTrigger>
@@ -249,17 +250,17 @@ export default function Index() {
 
           <TabsContent value="games" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-orbitron text-primary">Игры и Приложения</h2>
+              <h2 className="text-2xl font-bold text-foreground">Игры и Приложения</h2>
               <AddGameDialog onAdd={addGame} isOpen={isAddGameOpen} setIsOpen={setIsAddGameOpen} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {games.map((game) => (
-                <Card key={game.id} className="border-primary/30 bg-card/90 hover:neon-border transition-all">
+                <Card key={game.id} className="border-border/40 bg-card hover-lift">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-foreground">
                       <span className="flex items-center gap-2">
-                        <Icon name="Gamepad2" size={20} className="text-primary" />
+                        <Icon name="Gamepad2" size={20} className="text-foreground/70" />
                         {game.name}
                       </span>
                       <Button
@@ -274,8 +275,17 @@ export default function Index() {
                   </CardHeader>
                   <CardContent>
                     <Button
-                      onClick={() => window.open(game.url, '_blank')}
-                      className="w-full neon-border bg-primary/80 hover:bg-primary"
+                      onClick={() => {
+                        if (game.isFile) {
+                          const link = document.createElement('a');
+                          link.href = game.url;
+                          link.download = game.name;
+                          link.click();
+                        } else {
+                          window.open(game.url, '_blank');
+                        }
+                      }}
+                      className="w-full bg-primary hover:bg-primary/90 shadow-md"
                     >
                       <Icon name={game.type === 'link' ? 'ExternalLink' : 'Play'} size={16} className="mr-2" />
                       Запустить
@@ -286,7 +296,7 @@ export default function Index() {
             </div>
 
             {games.length === 0 && (
-              <Card className="border-primary/20 bg-card/50">
+              <Card className="border-border/30 bg-card/50">
                 <CardContent className="py-12 text-center">
                   <Icon name="Gamepad2" size={48} className="mx-auto mb-4 text-muted-foreground opacity-30" />
                   <p className="text-muted-foreground">Пока нет игр. Добавьте первую!</p>
@@ -297,13 +307,13 @@ export default function Index() {
 
           <TabsContent value="files" className="space-y-4">
             <div className="flex justify-between items-center flex-wrap gap-4">
-              <h2 className="text-2xl font-orbitron text-primary">Файлы</h2>
+              <h2 className="text-2xl font-bold text-foreground">Файлы</h2>
               <div className="flex gap-2 flex-wrap">
                 <Button
                   variant={fileFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFileFilter('all')}
-                  className={fileFilter === 'all' ? 'bg-primary' : 'border-primary/30'}
+                  className={fileFilter === 'all' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
                 >
                   Все
                 </Button>
@@ -311,7 +321,7 @@ export default function Index() {
                   variant={fileFilter === 'document' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFileFilter('document')}
-                  className={fileFilter === 'document' ? 'bg-primary' : 'border-primary/30'}
+                  className={fileFilter === 'document' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
                 >
                   <Icon name="FileText" size={14} className="mr-1" />
                   Документы
@@ -320,7 +330,7 @@ export default function Index() {
                   variant={fileFilter === 'image' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFileFilter('image')}
-                  className={fileFilter === 'image' ? 'bg-primary' : 'border-primary/30'}
+                  className={fileFilter === 'image' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
                 >
                   <Icon name="Image" size={14} className="mr-1" />
                   Изображения
@@ -329,7 +339,7 @@ export default function Index() {
                   variant={fileFilter === 'video' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFileFilter('video')}
-                  className={fileFilter === 'video' ? 'bg-primary' : 'border-primary/30'}
+                  className={fileFilter === 'video' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
                 >
                   <Icon name="Video" size={14} className="mr-1" />
                   Видео
@@ -340,14 +350,14 @@ export default function Index() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredFiles.map((file) => (
-                <Card key={file.id} className="border-primary/30 bg-card/90 hover:neon-border transition-all">
+                <Card key={file.id} className="border-border/40 bg-card hover-lift">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-foreground text-base">
                       <span className="flex items-center gap-2 truncate">
                         <Icon
                           name={file.type === 'document' ? 'FileText' : file.type === 'image' ? 'Image' : 'Video'}
                           size={18}
-                          className="text-primary flex-shrink-0"
+                          className="text-foreground/70 flex-shrink-0"
                         />
                         <span className="truncate">{file.name}</span>
                       </span>
@@ -364,7 +374,7 @@ export default function Index() {
                   <CardContent className="space-y-2">
                     <Button
                       onClick={() => window.open(file.url, '_blank')}
-                      className="w-full neon-border bg-primary/80 hover:bg-primary"
+                      className="w-full bg-primary hover:bg-primary/90 shadow-md"
                       size="sm"
                     >
                       <Icon name="ExternalLink" size={14} className="mr-2" />
@@ -374,7 +384,7 @@ export default function Index() {
                       <Button
                         onClick={() => setViewingMedia(file)}
                         variant="outline"
-                        className="w-full border-primary/30"
+                        className="w-full border-border/50 hover:bg-accent"
                         size="sm"
                       >
                         <Icon name="Eye" size={14} className="mr-2" />
@@ -387,7 +397,7 @@ export default function Index() {
             </div>
 
             {filteredFiles.length === 0 && (
-              <Card className="border-primary/20 bg-card/50">
+              <Card className="border-border/30 bg-card/50">
                 <CardContent className="py-12 text-center">
                   <Icon name="Files" size={48} className="mx-auto mb-4 text-muted-foreground opacity-30" />
                   <p className="text-muted-foreground">Файлы не найдены. Добавьте первый!</p>
@@ -400,16 +410,16 @@ export default function Index() {
 
       {viewingMedia && (
         <Dialog open={!!viewingMedia} onOpenChange={() => setViewingMedia(null)}>
-          <DialogContent className="max-w-4xl bg-card border-primary/50 neon-border">
+          <DialogContent className="max-w-4xl bg-card border-border/50 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-primary font-orbitron">{viewingMedia.name}</DialogTitle>
+              <DialogTitle className="text-foreground font-bold">{viewingMedia.name}</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
               {viewingMedia.type === 'image' && (
-                <img src={viewingMedia.url} alt={viewingMedia.name} className="w-full h-auto rounded border border-primary/30" />
+                <img src={viewingMedia.url} alt={viewingMedia.name} className="w-full h-auto rounded border border-border/30" />
               )}
               {viewingMedia.type === 'video' && (
-                <video src={viewingMedia.url} controls className="w-full h-auto rounded border border-primary/30">
+                <video src={viewingMedia.url} controls className="w-full h-auto rounded border border-border/30">
                   Ваш браузер не поддерживает видео.
                 </video>
               )}
@@ -465,7 +475,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
       </DialogTrigger>
       <DialogContent className="bg-card border-primary/50 neon-border">
         <DialogHeader>
-          <DialogTitle className="text-primary font-orbitron">Добавить игру / приложение</DialogTitle>
+          <DialogTitle className="text-foreground font-bold">Добавить игру / приложение</DialogTitle>
           <DialogDescription>Укажите название и ссылку на игру или приложение</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -473,7 +483,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
             <Button
               variant={uploadMode === 'url' ? 'default' : 'outline'}
               onClick={() => setUploadMode('url')}
-              className={uploadMode === 'url' ? 'bg-primary' : 'border-primary/30'}
+              className={uploadMode === 'url' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               size="sm"
             >
               <Icon name="Link" size={14} className="mr-2" />
@@ -482,7 +492,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
             <Button
               variant={uploadMode === 'file' ? 'default' : 'outline'}
               onClick={() => setUploadMode('file')}
-              className={uploadMode === 'file' ? 'bg-primary' : 'border-primary/30'}
+              className={uploadMode === 'file' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               size="sm"
             >
               <Icon name="Upload" size={14} className="mr-2" />
@@ -507,7 +517,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://... или C:\Program Files\..."
-                className="bg-secondary border-primary/30"
+                className="bg-input border-border/50 focus:border-foreground/30"
               />
             </div>
           ) : (
@@ -517,7 +527,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 id="game-file"
                 type="file"
                 onChange={handleFileSelect}
-                className="bg-secondary border-primary/30 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+                className="bg-input border-border/50 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:border-foreground/30"
               />
               {selectedFile && (
                 <p className="text-xs text-muted-foreground mt-2">
@@ -531,7 +541,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               <Button
                 variant={type === 'link' ? 'default' : 'outline'}
                 onClick={() => setType('link')}
-                className={type === 'link' ? 'bg-primary' : 'border-primary/30'}
+                className={type === 'link' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               >
                 <Icon name="Link" size={16} className="mr-2" />
                 Ссылка
@@ -539,14 +549,14 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               <Button
                 variant={type === 'local' ? 'default' : 'outline'}
                 onClick={() => setType('local')}
-                className={type === 'local' ? 'bg-primary' : 'border-primary/30'}
+                className={type === 'local' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               >
                 <Icon name="HardDrive" size={16} className="mr-2" />
                 Локальный путь
               </Button>
             </div>
           )}
-          <Button onClick={handleSubmit} className="w-full neon-border bg-primary hover:bg-primary/80">
+          <Button onClick={handleSubmit} className="w-full bg-primary hover:bg-primary/90 shadow-md">
             Добавить
           </Button>
         </div>
@@ -613,7 +623,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
       </DialogTrigger>
       <DialogContent className="bg-card border-primary/50 neon-border">
         <DialogHeader>
-          <DialogTitle className="text-primary font-orbitron">Добавить файл</DialogTitle>
+          <DialogTitle className="text-foreground font-bold">Добавить файл</DialogTitle>
           <DialogDescription>Укажите информацию о файле</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -621,7 +631,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
             <Button
               variant={uploadMode === 'url' ? 'default' : 'outline'}
               onClick={() => setUploadMode('url')}
-              className={uploadMode === 'url' ? 'bg-primary' : 'border-primary/30'}
+              className={uploadMode === 'url' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               size="sm"
             >
               <Icon name="Link" size={14} className="mr-2" />
@@ -630,7 +640,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
             <Button
               variant={uploadMode === 'file' ? 'default' : 'outline'}
               onClick={() => setUploadMode('file')}
-              className={uploadMode === 'file' ? 'bg-primary' : 'border-primary/30'}
+              className={uploadMode === 'file' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               size="sm"
             >
               <Icon name="Upload" size={14} className="mr-2" />
@@ -655,7 +665,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://... или C:\Documents\..."
-                className="bg-secondary border-primary/30"
+                className="bg-input border-border/50 focus:border-foreground/30"
               />
             </div>
           ) : (
@@ -666,7 +676,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 type="file"
                 onChange={handleFileSelect}
                 accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-                className="bg-secondary border-primary/30 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+                className="bg-input border-border/50 text-foreground cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:border-foreground/30"
               />
               {selectedFile && (
                 <p className="text-xs text-muted-foreground mt-2">
@@ -681,7 +691,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 variant={type === 'document' ? 'default' : 'outline'}
                 onClick={() => setType('document')}
                 size="sm"
-                className={type === 'document' ? 'bg-primary' : 'border-primary/30'}
+                className={type === 'document' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               >
                 <Icon name="FileText" size={14} className="mr-1" />
                 Документ
@@ -690,7 +700,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 variant={type === 'image' ? 'default' : 'outline'}
                 onClick={() => setType('image')}
                 size="sm"
-                className={type === 'image' ? 'bg-primary' : 'border-primary/30'}
+                className={type === 'image' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               >
                 <Icon name="Image" size={14} className="mr-1" />
                 Изображение
@@ -699,7 +709,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 variant={type === 'video' ? 'default' : 'outline'}
                 onClick={() => setType('video')}
                 size="sm"
-                className={type === 'video' ? 'bg-primary' : 'border-primary/30'}
+                className={type === 'video' ? 'bg-primary shadow-md' : 'border-border/50 hover:bg-accent'}
               >
                 <Icon name="Video" size={14} className="mr-1" />
                 Видео
@@ -718,7 +728,7 @@ function AddFileDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               <Label htmlFor="view-in-site" className="cursor-pointer">Разрешить просмотр внутри сайта</Label>
             </div>
           )}
-          <Button onClick={handleSubmit} className="w-full neon-border bg-primary hover:bg-primary/80">
+          <Button onClick={handleSubmit} className="w-full bg-primary hover:bg-primary/90 shadow-md">
             Добавить
           </Button>
         </div>
