@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { dbStorage } from '@/lib/db';
+import { popularProtocols, isCustomProtocol } from '@/lib/appProtocols';
 
 interface User {
   username: string;
@@ -446,26 +447,33 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [type, setType] = useState<'link' | 'local'>('link');
-  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+  const [uploadMode, setUploadMode] = useState<'url' | 'file' | 'protocol'>('protocol');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedProtocol, setSelectedProtocol] = useState<string>('');
+  const [protocolCategory, setProtocolCategory] = useState<string>('game');
 
   const handleSubmit = () => {
     if (uploadMode === 'file' && name && selectedFile) {
       onAdd(name, '', type, selectedFile);
-      setName('');
-      setUrl('');
-      setSelectedFile(null);
-      setType('link');
-      setUploadMode('url');
-      setIsOpen(false);
+      resetForm();
+    } else if (uploadMode === 'protocol' && selectedProtocol) {
+      const protocol = popularProtocols.find(p => p.protocol === selectedProtocol);
+      onAdd(protocol?.name || name, selectedProtocol, 'link');
+      resetForm();
     } else if (uploadMode === 'url' && name && url) {
       onAdd(name, url, type);
-      setName('');
-      setUrl('');
-      setType('link');
-      setUploadMode('url');
-      setIsOpen(false);
+      resetForm();
     }
+  };
+
+  const resetForm = () => {
+    setName('');
+    setUrl('');
+    setSelectedFile(null);
+    setSelectedProtocol('');
+    setType('link');
+    setUploadMode('protocol');
+    setIsOpen(false);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -510,29 +518,76 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               Загрузить файл
             </Button>
           </div>
-          <div>
-            <Label htmlFor="game-name">Название</Label>
-            <Input
-              id="game-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Например: Steam, Epic Games"
-              className="bg-secondary border-primary/30"
-            />
-          </div>
-          {uploadMode === 'url' ? (
-            <div>
-              <Label htmlFor="game-url">Ссылка или путь</Label>
-              <Input
-                id="game-url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://... или C:\Program Files\..."
-                className="bg-input border-border/50 focus:border-foreground/30"
-              />
-            </div>
+          {uploadMode === 'protocol' ? (
+            <>
+              <div className="flex gap-2 flex-wrap">
+                {['game', 'communication', 'media', 'dev', 'productivity'].map(cat => (
+                  <Button
+                    key={cat}
+                    variant={protocolCategory === cat ? 'default' : 'outline'}
+                    onClick={() => setProtocolCategory(cat)}
+                    className={protocolCategory === cat ? 'bg-primary shadow-md text-xs' : 'border-border/50 hover:bg-accent text-xs'}
+                    size="sm"
+                  >
+                    {cat === 'game' && '🎮 Игры'}
+                    {cat === 'communication' && '💬 Связь'}
+                    {cat === 'media' && '🎵 Медиа'}
+                    {cat === 'dev' && '👨‍💻 Разработка'}
+                    {cat === 'productivity' && '💼 Работа'}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                {popularProtocols
+                  .filter(p => p.category === protocolCategory)
+                  .map(protocol => (
+                    <Button
+                      key={protocol.protocol}
+                      variant={selectedProtocol === protocol.protocol ? 'default' : 'outline'}
+                      onClick={() => setSelectedProtocol(protocol.protocol)}
+                      className={`justify-start h-auto py-3 ${
+                        selectedProtocol === protocol.protocol
+                          ? 'bg-primary shadow-md border-2 border-primary'
+                          : 'border-border/50 hover:bg-accent'
+                      }`}
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon name={protocol.icon as any} size={16} />
+                          <span className="font-semibold">{protocol.name}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{protocol.description}</span>
+                      </div>
+                    </Button>
+                  ))}
+              </div>
+            </>
+          ) : uploadMode === 'url' ? (
+            <>
+              <div>
+                <Label htmlFor="game-name">Название</Label>
+                <Input
+                  id="game-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Например: Steam, Epic Games"
+                  className="bg-input border-border/50 focus:border-foreground/30"
+                />
+              </div>
+              <div>
+                <Label htmlFor="game-url">Ссылка или путь</Label>
+                <Input
+                  id="game-url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://... или C:\Program Files\..."
+                  className="bg-input border-border/50 focus:border-foreground/30"
+                />
+              </div>
+            </>
           ) : (
-            <div>
+            <>
+              <div>
               <Label htmlFor="game-file">Выберите файл</Label>
               <Input
                 id="game-file"
@@ -546,6 +601,7 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
                 </p>
               )}
             </div>
+            </>
           )}
           {uploadMode === 'url' && (
             <div className="flex gap-2">
@@ -567,7 +623,11 @@ function AddGameDialog({ onAdd, isOpen, setIsOpen }: { onAdd: (name: string, url
               </Button>
             </div>
           )}
-          <Button onClick={handleSubmit} className="w-full bg-primary hover:bg-primary/90 shadow-md">
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full bg-primary hover:bg-primary/90 shadow-md"
+            disabled={uploadMode === 'protocol' ? !selectedProtocol : uploadMode === 'file' ? !selectedFile : !name || !url}
+          >
             Добавить
           </Button>
         </div>
